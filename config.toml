@@ -48,18 +48,35 @@ enabled = false
 mode = "off"
 
 [allowed_extensions.images]
-values = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tiff", ".tif", ".heic"]
+values = [".jpg", ".jpeg", ".png", ".pdf"]
 
 [allowed_extensions.videos]
-values = [".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv", ".wmv", ".m4v", ".ts", ".m2ts"]
+values = [".mp4", ".mkv", ".avi"]
 
 [blocked_extensions]
 values = [
-  ".exe", ".msi", ".dll", ".sys", ".bat", ".cmd", ".com",
-  ".ps1", ".py", ".js", ".vbs", ".sh", ".bash", ".jar", ".pyw", ".pyc",
-  ".lnk", ".url", ".scr",
-  ".zip", ".rar", ".7z", ".iso", ".tar", ".gz", ".bz2", ".xz",
-  ".app", ".dmg", ".deb", ".rpm", ".apk", ".inf", ".reg"
+  # Executables & system files
+  ".exe", ".msi", ".dll", ".sys", ".bat", ".cmd", ".com", ".scr", ".inf", ".reg",
+  # Scripts
+  ".ps1", ".py", ".pyw", ".pyc", ".js", ".vbs", ".sh", ".bash", ".jar", ".rb", ".pl",
+  # Shortcuts
+  ".lnk", ".url",
+  # Archives
+  ".zip", ".rar", ".7z", ".iso", ".tar", ".gz", ".bz2", ".xz", ".cab",
+  # Package installers
+  ".app", ".dmg", ".deb", ".rpm", ".apk",
+  # Audio (not needed)
+  ".mp3", ".m4a", ".wav", ".flac", ".aac", ".ogg", ".wma",
+  # Other media you don't need
+  ".gif", ".webp", ".bmp", ".tiff", ".tif", ".heic", ".svg", ".ico",
+  # Documents you don't need
+  ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv",
+  # Config/data files
+  ".ini", ".cfg", ".xml", ".json", ".toml", ".yaml", ".yml", ".log",
+  # Web files
+  ".html", ".htm", ".css", ".php",
+  # Database
+  ".db", ".sqlite", ".sql"
 ]
 
 [logging]
