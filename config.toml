@@ -48,10 +48,10 @@ enabled = false
 mode = "off"
 
 [allowed_extensions.images]
-values = [".jpg", ".jpeg", ".png", ".pdf"]
+values = [".jpg", ".jpeg", ".png", ".pdf", ".heic"]
 
 [allowed_extensions.videos]
-values = [".mp4", ".mkv", ".avi"]
+values = [".mp4", ".mkv", ".avi", ".mov"]
 
 [blocked_extensions]
 values = [
