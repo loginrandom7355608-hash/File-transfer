@@ -20,7 +20,8 @@ class SendWorker(QObject):
         receiver_port: int,
         manifest: TransferManifest,
         source_root: str,
-        chunk_size: int = 4096,
+        chunk_size: int = 4 * 1024 * 1024,
+        heavy_mode: bool = False,
     ) -> None:
         super().__init__()
         self.receiver_host = receiver_host
@@ -28,18 +29,21 @@ class SendWorker(QObject):
         self.manifest = manifest
         self.source_root = source_root
         self.chunk_size = chunk_size
+        self.heavy_mode = heavy_mode
 
     @Slot()
     def run(self) -> None:
         try:
-            self.progress.emit("Connecting to receiver...")
+            mode_label = "heavy video" if self.heavy_mode else "standard"
+            self.progress.emit(f"Connecting to receiver ({mode_label} mode)...")
             sender = SenderService(
                 receiver_host=self.receiver_host,
                 receiver_port=self.receiver_port,
                 chunk_size=self.chunk_size,
+                heavy_mode=self.heavy_mode,
             )
             sender.send_manifest(self.manifest, Path(self.source_root))
-            self.progress.emit("Transfer completed.")
+            self.progress.emit("Transfer completed successfully.")
             self.finished.emit()
         except Exception as exc:
             self.failed.emit(str(exc))

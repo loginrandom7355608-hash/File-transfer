@@ -31,7 +31,7 @@ class SenderMainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Safe Media Transfer - Sender")
-        self.resize(820, 560)
+        self.resize(820, 620)
 
         self._scan_result = None
         self._scan_thread: QThread | None = None
@@ -50,10 +50,26 @@ class SenderMainWindow(QMainWindow):
 
         self.browse_button = QPushButton("Browse")
         self.scan_button = QPushButton("Scan")
+
+        # Standard transfer buttons
         self.transfer_images_button = QPushButton("Transfer Images")
         self.transfer_videos_button = QPushButton("Transfer Videos")
         self.transfer_both_button = QPushButton("Transfer Both")
         self.settings_button = QPushButton("Settings")
+
+        # Heavy video button — separate row, visually distinct
+        self.transfer_heavy_button = QPushButton("⚡  Transfer Heavy Video")
+        self.transfer_heavy_button.setToolTip(
+            "Optimised for large single video files (1GB+).\n"
+            "Uses 16MB chunks and streaming SHA256 — one disk read instead of two.\n"
+            "Use this for your biggest files. Not for images."
+        )
+        self.transfer_heavy_button.setStyleSheet(
+            "QPushButton { background-color: #2c5f8a; color: white; font-weight: bold; "
+            "padding: 6px; border-radius: 4px; }"
+            "QPushButton:hover { background-color: #3a7ab5; }"
+            "QPushButton:disabled { background-color: #555; color: #999; }"
+        )
 
         self.overall_progress = QProgressBar()
         self.current_progress = QProgressBar()
@@ -70,22 +86,35 @@ class SenderMainWindow(QMainWindow):
         folder_row.addWidget(self.browse_button)
         folder_row.addWidget(self.scan_button)
 
-        transfer_row = QHBoxLayout()
-        transfer_row.addWidget(self.transfer_images_button)
-        transfer_row.addWidget(self.transfer_videos_button)
-        transfer_row.addWidget(self.transfer_both_button)
-        transfer_row.addWidget(self.settings_button)
+        # Standard buttons row
+        standard_row = QHBoxLayout()
+        standard_row.addWidget(self.transfer_images_button)
+        standard_row.addWidget(self.transfer_videos_button)
+        standard_row.addWidget(self.transfer_both_button)
+        standard_row.addWidget(self.settings_button)
+
+        # Heavy video button gets its own full-width row with a label
+        heavy_label = QLabel("Large files (1GB+):")
+        heavy_row = QHBoxLayout()
+        heavy_row.addWidget(heavy_label)
+        heavy_row.addWidget(self.transfer_heavy_button)
 
         summary_box = QGroupBox("Scan Summary")
         summary_layout = QVBoxLayout()
         summary_layout.addWidget(self.summary_label)
         summary_box.setLayout(summary_layout)
 
+        # Separator label between standard and heavy
+        sep_label = QLabel("─────────────────────────────────────────────")
+        sep_label.setStyleSheet("color: #888;")
+
         layout = QVBoxLayout()
         layout.addLayout(top_form)
         layout.addLayout(folder_row)
         layout.addWidget(summary_box)
-        layout.addLayout(transfer_row)
+        layout.addLayout(standard_row)
+        layout.addWidget(sep_label)
+        layout.addLayout(heavy_row)
         layout.addWidget(QLabel("Current File Progress"))
         layout.addWidget(self.current_progress)
         layout.addWidget(QLabel("Overall Progress"))
@@ -99,9 +128,10 @@ class SenderMainWindow(QMainWindow):
 
         self.browse_button.clicked.connect(self._choose_source_folder)
         self.scan_button.clicked.connect(self._start_scan)
-        self.transfer_images_button.clicked.connect(lambda: self._start_transfer(["images"]))
-        self.transfer_videos_button.clicked.connect(lambda: self._start_transfer(["videos"]))
-        self.transfer_both_button.clicked.connect(lambda: self._start_transfer(["images", "videos"]))
+        self.transfer_images_button.clicked.connect(lambda: self._start_transfer(["images"], heavy=False))
+        self.transfer_videos_button.clicked.connect(lambda: self._start_transfer(["videos"], heavy=False))
+        self.transfer_both_button.clicked.connect(lambda: self._start_transfer(["images", "videos"], heavy=False))
+        self.transfer_heavy_button.clicked.connect(lambda: self._start_transfer(["videos"], heavy=True))
         self.settings_button.clicked.connect(self._open_settings)
 
     def _choose_source_folder(self) -> None:
@@ -116,7 +146,7 @@ class SenderMainWindow(QMainWindow):
             return
 
         if self._scan_thread is not None and self._scan_thread.isRunning():
-            self._append_log("Scan already in progress, ignoring duplicate click.")
+            self._append_log("Scan already in progress.")
             return
 
         self._append_log("Starting scan...")
@@ -155,15 +185,22 @@ class SenderMainWindow(QMainWindow):
         skipped_count = len(result.skipped)
         warning_count = len(result.warnings)
 
+        def fmt(b):
+            if b >= 1024 ** 3:
+                return f"{b / 1024**3:.1f} GB"
+            if b >= 1024 ** 2:
+                return f"{b / 1024**2:.1f} MB"
+            return f"{b / 1024:.1f} KB"
+
         self.summary_label.setText(
-            f"Images: {image_count} files / {image_size} bytes | "
-            f"Videos: {video_count} files / {video_size} bytes | "
+            f"Images: {image_count} files / {fmt(image_size)} | "
+            f"Videos: {video_count} files / {fmt(video_size)} | "
             f"Skipped: {skipped_count} | Warnings: {warning_count}"
         )
         self.status_label.setText("Scan complete")
         self._append_log("Scan completed.")
 
-    def _start_transfer(self, categories: list[str]) -> None:
+    def _start_transfer(self, categories: list[str], heavy: bool = False) -> None:
         if self._scan_result is None:
             QMessageBox.warning(self, "No scan", "Run a scan before transfer.")
             return
@@ -182,6 +219,10 @@ class SenderMainWindow(QMainWindow):
         if "videos" in categories:
             entries.extend(self._scan_result.videos)
 
+        if not entries:
+            QMessageBox.warning(self, "Nothing to send", "No files found in the selected categories.")
+            return
+
         manifest = build_transfer_manifest(
             session_id=str(uuid.uuid4()),
             source_root=source_root,
@@ -189,8 +230,10 @@ class SenderMainWindow(QMainWindow):
             entries=entries,
         )
 
-        self._append_log("Starting transfer...")
+        mode_label = "heavy video" if heavy else "standard"
+        self._append_log(f"Starting transfer ({mode_label} mode, {len(entries)} file(s))...")
         self.status_label.setText("Transferring...")
+        self._set_transfer_buttons_enabled(False)
 
         self._send_thread = QThread(self)
         self._send_worker = SendWorker(
@@ -199,6 +242,7 @@ class SenderMainWindow(QMainWindow):
             manifest=manifest,
             source_root=source_root,
             chunk_size=4 * 1024 * 1024,
+            heavy_mode=heavy,
         )
         self._send_worker.moveToThread(self._send_thread)
 
@@ -213,12 +257,19 @@ class SenderMainWindow(QMainWindow):
         self._send_thread.start()
 
     def _on_send_thread_finished(self) -> None:
+        self._set_transfer_buttons_enabled(True)
         if self._send_worker is not None:
             self._send_worker.deleteLater()
             self._send_worker = None
         if self._send_thread is not None:
             self._send_thread.deleteLater()
             self._send_thread = None
+
+    def _set_transfer_buttons_enabled(self, enabled: bool) -> None:
+        self.transfer_images_button.setEnabled(enabled)
+        self.transfer_videos_button.setEnabled(enabled)
+        self.transfer_both_button.setEnabled(enabled)
+        self.transfer_heavy_button.setEnabled(enabled)
 
     def _handle_send_finished(self) -> None:
         self.status_label.setText("Transfer complete")
