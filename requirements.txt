@@ -1,8 +1,12 @@
-colorama==0.4.6
+hidapi==0.15.0
+keyboard==0.13.5
+numpy==2.5.1
 puremagic==2.2.0
+pyhidapi==0.0.2
+pynput==1.8.2
 PySide6==6.11.1
 PySide6_Addons==6.11.1
 PySide6_Essentials==6.11.1
-python-dotenv==1.0.1
+pywinusb==0.4.2
 shiboken6==6.11.1
-tqdm==4.66.4
+six==1.17.0
