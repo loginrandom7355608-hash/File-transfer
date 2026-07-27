@@ -1,0 +1,87 @@
+[app]
+name = "Safe Media Transfer"
+protocol_version = 1
+debug_logging = false
+theme = "system"
+# Set to true only for debugging purposes on isolated networks
+allow_remote_connections = false
+
+[network]
+# SECURITY: Use 127.0.0.1 for local-only transfers (secure)
+# For LAN transfers, use 0.0.0.0 or specific LAN IP
+bind_ip = "127.0.0.1"
+port = 5001
+connect_timeout_seconds = 10
+read_timeout_seconds = 30
+write_timeout_seconds = 30
+heartbeat_interval_seconds = 10
+idle_disconnect_seconds = 90
+
+[transfer]
+# 4MB chunks (4194304 bytes) for optimal balance between speed and safety
+chunk_size_bytes = 4194304
+resume_enabled = true
+max_retries = 3
+max_file_count = 10000
+# 1TB max file size (1099511627776 bytes)
+max_file_size_bytes = 1099511627776
+max_manifest_bytes = 33554432
+# "replace" = overwrite existing, "skip" = don't transfer if exists, "fail" = abort transfer
+duplicate_policy = "replace"
+
+[storage]
+# Change this to your preferred location
+default_destination = "C:\\SafeMediaTransfer\\Inbox"
+staging_suffix = ".part"
+state_suffix = ".part.json"
+report_folder = "reports"
+log_folder = "logs"
+
+[verification]
+# SECURITY: SHA256 integrity verification (essential for malware safety)
+sha256_enabled = true
+signature_validation_enabled = true
+
+[metadata]
+# SECURITY: Keep metadata disabled for maximum privacy
+enabled = false
+mode = "off"
+
+[allowed_extensions.images]
+# Allowed image formats (add your own as needed)
+values = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tiff", ".tif", ".heic"]
+
+[allowed_extensions.videos]
+# Allowed video formats (add your own as needed)
+values = [".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv", ".wmv", ".m4v", ".ts", ".m2ts"]
+
+[blocked_extensions]
+# SECURITY: Comprehensive blocking of potentially dangerous file types
+# Executables, scripts, archives, and system files are blocked by default
+values = [
+  # Windows executables and installers
+  ".exe", ".msi", ".dll", ".sys", ".bat", ".cmd", ".com",
+  # Scripts and interpreters
+  ".ps1", ".py", ".js", ".vbs", ".sh", ".bash", ".jar", ".pyw", ".pyc",
+  # Shortcuts
+  ".lnk", ".url", ".scr",
+  # Archives (can hide malware)
+  ".zip", ".rar", ".7z", ".iso", ".tar", ".gz", ".bz2", ".xz",
+  # Other potentially dangerous formats
+  ".app", ".dmg", ".deb", ".rpm", ".apk", ".inf", ".reg"
+]
+
+[logging]
+# Max log file size (5MB before rotation)
+max_bytes = 5242880
+backup_count = 10
+# DEBUG, INFO, WARNING, ERROR, CRITICAL
+level = "INFO"
+
+[security]
+# Enable path traversal protection (always true, can't be disabled)
+path_validation_enabled = true
+# Block symbolic links in source directories (prevents symlink attacks)
+block_symlinks = true
+# Verify files are within allowed directory
+verify_file_boundaries = true

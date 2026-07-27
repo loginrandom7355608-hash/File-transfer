@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "safe-media-transfer"
+version = "0.1.0"
+description = "Offline Windows desktop media transfer gate with strict filtering and verification."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+  { name = "random login" }
+]
+dependencies = [
+  "PySide6>=6.11.1",
+  "puremagic>=2.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2.0",
+  "pytest-timeout>=2.3.1",
+  "PyInstaller>=6.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["app*"]
